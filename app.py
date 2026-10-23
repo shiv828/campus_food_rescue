@@ -2,28 +2,37 @@ from flask import Flask, make_response, jsonify, request
 #pip install pymongo
 from pymongo import MongoClient
 from bson import ObjectId
+from authentication import token_required
 
 import jwt
 import datetime
-from functools import wraps
+import hmac
+import os
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'mysecret'
+app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
+LOGIN_USERNAME = os.environ["CAMPUS_RESCUE_USERNAME"]
+LOGIN_PASSWORD = os.environ["CAMPUS_RESCUE_PASSWORD"]
 
 #Mongo connection
 client = MongoClient("mongodb://localhost:27017")
-db = client.bizDB
-businesses = db.biz
+db = client.listing
+listings = db.food
 
 @app.route("/api/v1.0/login", methods=['GET'])
 def login():
     auth = request.authorization
 
-    if auth and auth.password == 'password':
+    if (
+        auth
+        and auth.username == LOGIN_USERNAME
+        and auth.password is not None
+        and hmac.compare_digest(auth.password, LOGIN_PASSWORD)
+    ):
         token = jwt.encode({
             'user' : auth.username,
-            'exp' : datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30)
+            'exp' : datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=30)
         },
         app.config['SECRET_KEY'],
         algorithm="HS256")
@@ -34,7 +43,6 @@ def login():
         {'WWW-Authenticate': 'Basic realm = "Login required"'})
 
 
-#================================== listings routes ========================
 @app.route("/", methods=["GET"])
 def index():
     return make_response("<h1>Welcome to campus food rescue</h1>", 200)
@@ -42,7 +50,7 @@ def index():
 
 @app.route("/api/v1.0/listings", methods=["GET"])
 def show_all_listings():
-    
+ 
     page_num, page_size = 1, 3
     if request.args.get('pn'):
         page_num = int(request.args.get('pn'))
@@ -52,7 +60,7 @@ def show_all_listings():
 
     data_to_return = []
 
-    for business in businesses.find().skip(page_start).limit(page_size):
+    for business in listings.find().skip(page_start).limit(page_size):
         business['_id'] = str(business['_id'])
 
         #for review in business['reviews']:
@@ -81,7 +89,8 @@ def show_one_listings(biz_id):
 
 
 @app.route("/api/v1.0/listings", methods=["POST"])
-def add_business():
+@token_required
+def add_listings():
     if "name" in request.form and \
         "town" in request.form and "rating" in request.form:
         
@@ -92,7 +101,7 @@ def add_business():
             "review": []
         }
 
-        new_business_id = businesses.insert_one(new_business)
+        new_business_id = listings.insert_one(new_business)
 
         new_business_link = "http://127.0.0.1:5001/api/v1.0/listings/"\
             + str(new_business_id.inserted_id)
@@ -104,9 +113,10 @@ def add_business():
 
 
 @app.route("/api/v1.0/listings/<string:biz_id>", methods=["PUT"])
-def edit_business(biz_id):
+@token_required
+def edit_listings(biz_id):
     if "name" in request.form and "town" in request.form and "rating" in request.form:
-        results = businesses.update_one(
+        results = listings.update_one(
             {"_id":ObjectId(biz_id)}, {
                 "$set": {
                     "name": request.form["name"],
@@ -126,11 +136,12 @@ def edit_business(biz_id):
 
 
 @app.route("/api/v1.0/listings/<string:biz_id>", methods=['DELETE'])
-def delete_business(biz_id):
-    result = businesses.delete_one({"_id":ObjectId(biz_id)})
+@token_required
+def delete_listings(biz_id):
+    result = listings.delete_one({"_id":ObjectId(biz_id)})
 
     if result.deleted_count == 1:
-        return make_response(jsonify({"message":"Business deleted!!!"}), 200)
+        return make_response(jsonify({"message":"Listing deleted!!!"}), 200)
     else:
         return make_response(jsonify({"error":"Invalid business ID"}), 404)
 
@@ -139,7 +150,7 @@ def delete_business(biz_id):
 
 @app.route("/api/v1.0/listings/<int:biz_id>/reviews", methods=['GET'])
 def get_all_reviews(biz_id):
-    for business in businesses:
+    for business in listings:
         if business['id'] == biz_id:
             break
 
@@ -148,6 +159,7 @@ def get_all_reviews(biz_id):
 #=======================================Reviews (Post method) =================================
 
 @app.route("/api/v1.0/listings/<string:biz_id>/reviews", methods=['POST'])
+@token_required
 def add_new_review(biz_id): 
     new_review = {
         "_id": ObjectId(),
@@ -156,19 +168,17 @@ def add_new_review(biz_id):
         "stars": request.form['stars']
         }
         
-    businesses.update_one({ "_id" : ObjectId(biz_id) },\
+    listings.update_one({ "_id" : ObjectId(biz_id) },\
         {"$push": {"review":new_review}})
 
     new_review_link = "http://127.0.0.1:5001/api/v1.0/listings/"+ biz_id +"/reviews"\
         + str(new_review["_id"])
     
     return make_response(jsonify({"url": new_review_link}), 201)
-    
-
 
 @app.route("/api/v1.0/listings/<int:biz_id>/reviews/<int:rev_id>", methods=['GET'])
 def fetch_one_review(biz_id, rev_id):
-    for business in businesses:
+    for business in listings:
         if business["id"] == biz_id:
             for review in business["reviews"]:
                 if review["id"] == rev_id:
@@ -178,8 +188,9 @@ def fetch_one_review(biz_id, rev_id):
     return make_response(jsonify(review), 200)
 
 @app.route("/api/v1.0/listings/<int:biz_id>/reviews/<int:rev_id>", methods=['PUT'])
+@token_required
 def update_review(biz_id, rev_id):
-    for business in businesses:
+    for business in listings:
         if business["id"] == biz_id:
             for review in business["reviews"]:
                 if review["id"] == rev_id:
@@ -193,8 +204,9 @@ def update_review(biz_id, rev_id):
 
 
 @app.route("/api/v1.0/listings/<int:biz_id>/reviews/<int:rev_id>", methods=['DELETE'])
+@token_required
 def delete_review(biz_id, rev_id):
-    for business in businesses:
+    for business in listings:
         if business["id"] == biz_id:
             for review in business["reviews"]:
                 if review["id"] == rev_id:
