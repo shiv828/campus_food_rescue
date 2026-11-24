@@ -1,74 +1,15 @@
-from flask import Flask, make_response, jsonify, request
-from functools import wraps
-#pip install pymongo
-from pymongo import MongoClient
 from bson import ObjectId
+from flask import Blueprint, jsonify, make_response, request
 
-import jwt
-import datetime
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = ('mysecret')
-
-#Mongo connection
-client = MongoClient("mongodb://localhost:27017")
-db = client.listing
-listings = db.food
+from provider import provider_required
+from extensions import listings
 
 
-#JWT decorator
-def jwt_required(func):
-    @wraps(func)
-    def jwt_required_wrapper(*args, **kwargs):
-        auth_header = request.headers.get("Authorization", "")
-        token = None
-        
-        if auth_header.startswith("Bearer "):
-            token = auth_header.split(" ", 1)[1].strip()
+businesses_bp = Blueprint("businesses", __name__)
 
-        if not token:
-            return make_response(jsonify({"message": "Token is missing"}), 401)
-
-        try:
-            data = jwt.decode(token,
-                    app.config['SECRET_KEY'],
-                    algorithms="HS256")
-        except:
-            return make_response(jsonify({"message":"Token is invalid"}), 401)
-
-        request.user = data
-        return func(*args, **kwargs)
-
-    return jwt_required_wrapper
-
-@app.route("/api/v1.0/login", methods=['GET'])
-def login():
-    auth = request.authorization
-
-    if (
-        auth
-    and auth.username == "admin"
-    ):
-        token = jwt.encode({
-            'user' : auth.username,
-            'exp' : datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=30)
-        },
-        app.config['SECRET_KEY'],
-        algorithm="HS256")
-
-        return make_response(jsonify({"token": token}), 200)
-    
-    return make_response("Could not verify", 401, \
-        {'WWW-Authenticate': 'Basic realm = "Login required"'}) 
-
-
-#====listings routes========================
-@app.route("/", methods=["GET"])
-def index():
-    return make_response("<h1>Welcome to campus food rescue</h1>", 200)
 
 #===============================Show all listings========================================
-@app.route("/api/v1.0/listings", methods=["GET"])
+@businesses_bp.route("/api/v1.0/listings", methods=["GET"])
 def show_all_listings():
  
     page_num, page_size = 1, 3
@@ -81,6 +22,7 @@ def show_all_listings():
     data_to_return = []
 
     for business in listings.find().skip(page_start).limit(page_size):
+        business.pop('reservations', None)
         business['_id'] = str(business['_id'])
 
         #for review in business['reviews']:
@@ -92,11 +34,12 @@ def show_all_listings():
 
 
 # ==============================Show one listings========================================
-@app.route("/api/v1.0/listings/<string:listing_id>", methods=["GET"])
+@businesses_bp.route("/api/v1.0/listings/<string:listing_id>", methods=["GET"])
 def show_one_listings(listing_id):
     business = listings.find_one({'_id':ObjectId(listing_id)})
 
     if business is not None:
+        business.pop('reservations', None)
         business['_id'] = str(business['_id'])
 
         #for review in business['reviews']:
@@ -108,11 +51,12 @@ def show_one_listings(listing_id):
         return make_response(jsonify({"error":"Invalid business ID"}), 404)
 
 #===============================Show listings by food name========================================
-@app.route("/api/v1.0/listings/food_name/<string:food_name>", methods=["GET"])
+@businesses_bp.route("/api/v1.0/listings/food_name/<string:food_name>", methods=["GET"])
 def show_listings_by_food_name(food_name):
     data_to_return = []
 
     for business in listings.find({"food_name": food_name}):
+        business.pop('reservations', None)
         business['_id'] = str(business['_id'])
 
         #for review in business['reviews']:
@@ -123,11 +67,12 @@ def show_listings_by_food_name(food_name):
     return make_response(jsonify(data_to_return), 200)
 
 #===============================Show listings by provider id========================================
-@app.route("/api/v1.0/listings/provider_id/<string:provider_id>", methods=["GET"])
+@businesses_bp.route("/api/v1.0/listings/provider_id/<string:provider_id>", methods=["GET"])
 def show_listings_by_provider_id(provider_id):
     data_to_return = []
 
     for business in listings.find({"provider_id": provider_id}):
+        business.pop('reservations', None)
         business['_id'] = str(business['_id'])
 
         #for review in business['reviews']:
@@ -138,11 +83,12 @@ def show_listings_by_provider_id(provider_id):
     return make_response(jsonify(data_to_return), 200)
 
 #===============================Show listings by listing status========================================
-@app.route("/api/v1.0/listings/listing_status/<string:listing_status>", methods=["GET"])
+@businesses_bp.route("/api/v1.0/listings/listing_status/<string:listing_status>", methods=["GET"])
 def show_listings_by_listing_status(listing_status):
     data_to_return = []
 
     for business in listings.find({"listing_status": listing_status}):
+        business.pop('reservations', None)
         business['_id'] = str(business['_id'])
 
         #for review in business['reviews']:
@@ -154,15 +100,15 @@ def show_listings_by_listing_status(listing_status):
 
 
 #==============================Add listings========================================
-@app.route("/api/v1.0/listings", methods=["POST"])
-#@jwt_required
+@businesses_bp.route("/api/v1.0/listings", methods=["POST"])
+@provider_required
 def add_listings():
     if "listing_id" in request.form and \
         "food_name" in request.form and "description" in request.form:
         
         new_listings = {
             "listing_id": request.form["listing_id"],
-            "provider_id": request.form["provider_id"],
+            "provider_id": request.provider_id,
             "food_name": request.form["food_name"],
             "description": request.form["description"],
             "quantity_available": request.form["quantity_available"],
@@ -187,15 +133,15 @@ def add_listings():
     
 
 #===============================Edit listings========================================
-@app.route("/api/v1.0/listings/<string:listing_id>", methods=["PUT"])
-@jwt_required
+@businesses_bp.route("/api/v1.0/listings/<string:listing_id>", methods=["PUT"])
+@provider_required
 def edit_listings(listing_id):
     if "listing_id" in request.form and "provider_id" in request.form and "food_name" in request.form:
         results = listings.update_one(
-            {"_id":ObjectId(listing_id)}, {
+            {"_id":ObjectId(listing_id), "provider_id": request.provider_id}, {
                 "$set": {
                     "listing_id": request.form["listing_id"],
-                    "provider_id": request.form["provider_id"],
+                    "provider_id": request.provider_id,
                     "food_name": request.form["food_name"],
                     "description": request.form["description"],
                     "quantity_available": request.form["quantity_available"],
@@ -220,17 +166,12 @@ def edit_listings(listing_id):
 
 
 #===============================Delete listings========================================
-@app.route("/api/v1.0/listings/<string:listing_id>", methods=['DELETE'])
-@jwt_required
+@businesses_bp.route("/api/v1.0/listings/<string:listing_id>", methods=['DELETE'])
+@provider_required
 def delete_listings(listing_id):
-    result = listings.delete_one({"_id":ObjectId(listing_id)})
+    result = listings.delete_one({"_id":ObjectId(listing_id), "provider_id": request.provider_id})
 
     if result.deleted_count == 1:
         return make_response(jsonify({"message":"Listing deleted!!!"}), 200)
     else:
         return make_response(jsonify({"error":"Invalid business ID"}), 404)
-
-
-
-if __name__ == "__main__":
-    app.run(debug=True, port=5001)

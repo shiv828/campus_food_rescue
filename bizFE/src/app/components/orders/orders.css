@@ -1,0 +1,11 @@
+:host { display:block; background:#fff9ee; color:#183c2b; min-height:100vh; }
+main { max-width:1000px; margin:auto; padding:2rem 1rem; }
+h1 { font-size:clamp(2rem,5vw,3.5rem); font-weight:800; margin-top:1rem; }
+section { padding:1.5rem; margin:1.5rem 0; border-radius:1rem; background:#e4efda; }
+article { background:white; padding:1rem; margin:1rem 0; border-radius:.75rem; }
+form { display:grid; gap:1rem; max-width:420px; margin-bottom:1rem; }
+label { display:grid; gap:.35rem; }
+input { border:1px solid #65816b; border-radius:.4rem; padding:.65rem; }
+button { background:#183c2b; color:white; border:0; padding:.65rem 1rem; border-radius:1.5rem; }
+button:disabled { opacity:.6; }
+a { color:#183c2b; } strong { letter-spacing:.12em; }

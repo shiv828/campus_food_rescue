@@ -1,0 +1,162 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+    --campus-ink: #193c2e;
+    --campus-paper: #faf9f4;
+    --campus-line: #d8dfd4;
+    --campus-serif: Georgia, "Times New Roman", serif;
+}
+
+html body {
+    background: var(--campus-paper);
+    color: var(--campus-ink);
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+app-navigation .navbar > div {
+    max-width: 1240px;
+    margin-inline: auto;
+    gap: .35rem 1rem;
+    padding-block: .45rem;
+}
+
+app-navigation .navbar .nav-link {
+    padding: .55rem .8rem;
+    border-radius: .5rem;
+    color: #e2eadf;
+}
+
+app-navigation .navbar .nav-link:is(:hover, :focus-visible, .active) {
+    background: #345442;
+    color: white;
+}
+
+body app-home, body app-businesses, body app-orders {
+    background: var(--campus-paper);
+}
+
+app-root :is(app-home, app-businesses, app-orders, app-business) h1,
+app-root :is(app-home, app-businesses) h2 {
+    font-family: var(--campus-serif);
+    font-weight: 500;
+    letter-spacing: -.052em;
+    text-wrap: balance;
+}
+
+app-home .welcome .main-photo {
+    background: #e3ead9;
+}
+
+app-home .welcome .second-photo {
+    background: white;
+    box-shadow: 0 .5rem 1.25rem #183c2b20;
+}
+
+app-home .live-food, app-home .steps-section {
+    border-top: 1px solid var(--campus-line);
+    padding-top: clamp(2rem, 5vw, 4rem);
+}
+
+app-home .featured-grid article,
+app-home .steps article:nth-child(n),
+app-businesses .meal-grid .meal-card,
+app-orders main section,
+app-business .container .card {
+    background: white;
+    border: 1px solid var(--campus-line);
+    box-shadow: 0 .25rem 1rem #193c2e08;
+    border-radius: 1rem;
+}
+
+app-home .featured-grid article img {
+    aspect-ratio: 8 / 5;
+    object-fit: cover;
+}
+
+app-businesses .meal-grid .meal-status {
+    background: #eff4eb;
+    border-color: #d3dfcb;
+    color: #294935;
+}
+
+app-businesses .food-results .food-filters {
+    background: #edf1e9;
+    align-items: end;
+}
+
+app-businesses .food-filters label {
+    flex: 1 1 10rem;
+    min-width: 0;
+}
+
+app-businesses .food-filters label:last-child {
+    align-self: center;
+    accent-color: var(--campus-ink);
+}
+
+app-orders main > p, app-home .welcome .intro {
+    max-width: 52ch;
+    line-height: 1.65;
+}
+
+app-orders main section h2, app-business .card-body h1 {
+    color: var(--campus-ink);
+}
+
+app-orders main section article {
+    border: 1px solid var(--campus-line);
+}
+
+app-orders main section > button:first-of-type {
+    background: white;
+    color: var(--campus-ink);
+    border: 1px solid #758878;
+}
+
+app-business .card-body form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem;
+    margin-block: 1rem;
+}
+
+app-business .card-body input {
+    width: 4.5rem;
+    border: 1px solid #758878;
+    border-radius: .5rem;
+    padding: .45rem;
+}
+
+app-business .card-body dt {
+    border-top: 1px solid var(--campus-line);
+    padding-top: .65rem;
+    color: #47614e;
+    font-size: .85rem;
+}
+
+app-business .card-body dd {
+    margin-bottom: .65rem;
+    overflow-wrap: anywhere;
+}
+
+app-root :is(button, input, select, a):focus-visible {
+    outline: 3px solid #b24c1b;
+    outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+    app-navigation .navbar .navbar-nav {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    app-home .welcome {
+        min-height: auto;
+        padding-top: 1rem;
+    }
+
+    app-businesses .food-filters label {
+        flex-basis: 100%;
+    }
+}

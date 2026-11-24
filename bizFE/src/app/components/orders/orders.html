@@ -1,0 +1,48 @@
+<main>
+  <a routerLink="/businesses">← Browse food</a>
+  <h1>Your campus pickups</h1>
+  <p>Reserve free portions and collect from the listed campus location. Each item is confirmed separately.</p>
+  @if (message()) { <p role="status">{{ message() }}</p> }
+
+  @if (!store.token()) {
+    <section>
+      <h2>{{ registering ? 'Create your account' : 'Sign in' }}</h2>
+      <form (ngSubmit)="authenticate()">
+        @if (registering) { <label>Name<input name="name" [(ngModel)]="name" required autocomplete="name"></label> }
+        <label>Email<input type="email" name="email" [(ngModel)]="email" required autocomplete="email"></label>
+        <label>Password<input type="password" name="password" [(ngModel)]="password" required minlength="8" [attr.autocomplete]="registering ? 'new-password' : 'current-password'"></label>
+        <button [disabled]="busy()">{{ registering ? 'Create account' : 'Sign in' }}</button>
+      </form>
+      <button type="button" [disabled]="busy()" (click)="registering = !registering">{{ registering ? 'Already registered? Sign in' : 'Create an account' }}</button>
+    </section>
+  } @else {
+    <button type="button" [disabled]="busy()" (click)="store.logout(); orders.set([])">Sign out</button>
+  }
+
+  <section>
+    <h2>Your basket · Free</h2>
+    @for (item of store.basket(); track item.listing._id) {
+      <article><h3>{{ item.listing.food_name }}</h3><p>{{ item.quantity }} portions · {{ item.listing.pickup_location }}</p>
+        <button type="button" [disabled]="busy()" (click)="store.remove(item.listing._id)">Remove</button>
+      </article>
+    } @empty { <p>Your basket is empty. Choose food from the listings.</p> }
+    @if (store.token() && store.basket().length) {
+      <button type="button" [disabled]="busy()" (click)="checkout()">{{ busy() ? 'Confirming…' : 'Confirm free reservations' }}</button>
+    }
+  </section>
+  @if (store.token()) {
+    <section><h2>My reservations</h2>
+      <button type="button" [disabled]="busy()" (click)="reload()">Refresh orders</button>
+      @for (order of orders(); track order.id) {
+        <article>
+          <h3>{{ order.food_name }}</h3><p>{{ order.quantity }} portions · {{ order.status }}</p>
+          <p>{{ location(order) }}</p><p>Collect by {{ order.pickup_deadline | date:'d MMM yyyy, HH:mm' }}</p>
+          @if (order.status === 'confirmed') {
+            <p>Collection code <strong>{{ order.collection_code }}</strong></p>
+            <button type="button" [disabled]="busy()" (click)="cancel(order.id)">Cancel reservation</button>
+          }
+        </article>
+      } @empty { <p>No reservations yet.</p> }
+    </section>
+  }
+</main>

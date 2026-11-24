@@ -1,0 +1,81 @@
+<main>
+    <section class="welcome" aria-labelledby="welcome-title">
+        <div class="welcome-copy">
+            <p class="eyebrow">Campus Food Rescue</p>
+            <h1 id="welcome-title">Good food.<br>Better shared.</h1>
+            <p class="intro">Give surplus food a second chance. Explore meals, snacks and bakery treats shared by food providers across your campus.</p>
+            <a class="action" routerLink="/businesses">Explore food listings <span aria-hidden="true">↗</span></a>
+            <p class="small-print">Find your next campus pickup.</p>
+        </div>
+        <div class="welcome-photos">
+            <figure class="main-photo">
+                <img src="food-photos/lentil-curry-rice.jpg" width="272" height="260"
+                     alt="Illustrative photograph of lentil curry served with rice" fetchpriority="high">
+                <figcaption>A little less waste.<br>A little more to share.</figcaption>
+            </figure>
+            <figure class="second-photo">
+                <img src="food-photos/bakery-pastries.jpg" width="260" height="260"
+                     alt="Illustrative photograph of croissants and pastries">
+            </figure>
+        </div>
+    </section>
+
+    <section class="live-food" aria-labelledby="live-title">
+        <h2 id="live-title">Available for pickup</h2>
+        @if (loading) { <p role="status">Checking campus food listings…</p> }
+        @if (error) { <p role="alert">{{ error }}</p> }
+        @if (!loading && !error) {
+            <div class="impact">
+                <p><strong>{{ collected }}</strong> listings marked collected</p>
+                <p><strong>{{ providers }}</strong> providers with listings</p>
+            </div>
+            @if (meals.length === 0) {
+                <p>There are no meals with a current collection deadline. Browse all listings to see the campus catalogue.</p>
+            }
+            <div class="featured-grid">
+                @for (meal of meals; track meal._id) {
+                    <article>
+                        @if (meal.photo_url) { <img [src]="meal.photo_url" alt="" width="260" height="260" loading="lazy"> }
+                        <h3>{{ meal.food_name }}</h3>
+                        <p>Collect by {{ meal.pickup_deadline | date:'d MMM, HH:mm' }}</p>
+                        <p>{{ meal.pickup_location }}</p>
+                        <a [routerLink]="['/businesses', meal._id]">View collection details →</a>
+                    </article>
+                }
+            </div>
+        }
+        <a class="action" routerLink="/businesses">View all food →</a>
+    </section>
+
+    <section class="steps-section"  aria-labelledby="steps-title">
+        <div class="section-heading">
+            <h2 id="steps-title">From campus kitchen<br>to your next meal.</h2>
+            <p>See what’s listed, check the details and find the collection point.</p>
+        </div>
+        <div class="steps">
+            <article>
+                <h3>Explore the food</h3>
+                <p>Browse the listings for meals, fruit, baked goods and more.</p>
+            </article>
+            <article>
+                <h3>Check the details</h3>
+                <p>Open a listing to see its status, quantity and pickup location.</p>
+            </article>
+            <article>
+                <h3>Find the pickup point</h3>
+                <p>Use the campus, building and collection information to plan your visit.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="discover" aria-labelledby="discover-title">
+        <div>
+            <h2 id="discover-title">Something good<br>could be waiting.</h2>
+            <p>Take a look at the latest campus food listings.</p>
+            <a class="action" routerLink="/businesses">Browse food <span aria-hidden="true">→</span></a>
+        </div>
+        <img src="food-photos/vegetarian-pizza.jpg" width="260" height="260"
+             alt="Illustrative photograph of vegetarian pizza slices" loading="lazy">
+    </section>
+    <footer>Campus Food Rescue · Share food. Reduce waste.</footer>
+</main>

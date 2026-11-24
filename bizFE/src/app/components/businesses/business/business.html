@@ -1,0 +1,48 @@
+<div class="container mt-5">
+    <a routerLink="/businesses">Back to food listings</a>
+    @if (state().listing; as listing) {
+        <div class="card mt-3" [class.detail-card]="listing.photo_url">
+            @if (listing.photo_url; as photoUrl) {
+                <figure class="detail-photo">
+                    <img [src]="photoUrl" alt="" width="1000" height="625" fetchpriority="high">
+                    <figcaption>Illustrative food photo</figcaption>
+                </figure>
+            }
+            <div class="card-body">
+                <h1>{{ listing.food_name }}</h1>
+                <p><strong>Free campus collection</strong></p>
+                @if (canReserve(listing)) {
+                    <form (ngSubmit)="addToBasket(listing)">
+                        <label>Portions <input name="quantity" type="number" [(ngModel)]="quantity" min="1" max="10" required></label>
+                        <button type="submit" class="btn btn-success">Add to basket</button>
+                    </form>
+                    @if (added) { <p role="status">Added to basket. <a routerLink="/orders">Continue to checkout →</a></p> }
+                } @else { <p role="status">This listing is unavailable for reservation. Check the collection deadline and status below.</p> }
+                <p>{{ listing.description }}</p>
+                <dl class="mb-0">
+                    <dt>Pickup location</dt>
+                    <dd>{{ listing.pickup_location }}</dd>
+                    <dt>Quantity available</dt>
+                    <dd>{{ listing.quantity_available }}</dd>
+                    @if (validDeadline(listing.pickup_deadline)) {
+                        <dt>Collection deadline</dt>
+                        <dd>{{ listing.pickup_deadline | date:'d MMM yyyy, HH:mm' }}</dd>
+                    }
+                    @if (listing.dietary_tags) {
+                        <dt>Dietary and allergen information supplied</dt>
+                        <dd>{{ listing.dietary_tags }}</dd>
+                    }
+                    @if (listing.provider_id) {
+                        <dt>Provider reference</dt><dd>{{ listing.provider_id }}</dd>
+                    }
+                    <dt>Status</dt>
+                    <dd>{{ listing.listing_status }}</dd>
+                </dl>
+            </div>
+        </div>
+    } @else if (state().error; as error) {
+        <p role="alert">{{ error }}</p>
+    } @else {
+        <p role="status">Loading food listing…</p>
+    }
+</div>

@@ -1,0 +1,47 @@
+<main>
+  <h1>Provider dashboard</h1>
+  @if (error()) { <p class="notice" role="alert">{{ error() }}</p> }
+  @if (!account.token()) {
+    <section>
+      <h2>Provider sign-in</h2>
+      <form #login="ngForm" (ngSubmit)="signIn()">
+        <label>Email<input type="email" name="email" [(ngModel)]="email" required autocomplete="username"></label>
+        <label>Password<input type="password" name="password" [(ngModel)]="password" required autocomplete="current-password"></label>
+        <button [disabled]="login.invalid || busy()">Sign in</button>
+      </form>
+    </section>
+  } @else if (authorised()) {
+    <div class="columns">
+      <section>
+        <h2>Add food</h2>
+        @if (published()) { <p role="status">Food published. <a [routerLink]="['/businesses', published()]">Open listing</a></p> }
+        <form #food="ngForm" (ngSubmit)="publish(food)">
+          <label>Food name<input name="food_name" ngModel required></label>
+          <label>Description<textarea name="description" ngModel required></textarea></label>
+          <label>Portions<input type="number" name="quantity_available" ngModel min="1" max="10000" step="1" required></label>
+          <label>Campus<input name="campus" ngModel required></label>
+          <label>Collection point<input name="collection_point" ngModel required></label>
+          <label>Collection starts<input type="datetime-local" name="available_from" ngModel required></label>
+          <label>Collect by<input type="datetime-local" name="pickup_deadline" ngModel required></label>
+          <label>Dietary or allergen tags (optional)<input name="dietary_tags" ngModel placeholder="e.g. vegetarian, contains milk"></label>
+          <button [disabled]="food.invalid || busy()">Publish listing</button>
+        </form>
+      </section>
+      <section>
+        <h2>My listings</h2>
+        @for (row of rows(); track row._id) {
+          <article>
+            <a [routerLink]="['/businesses', row._id]">{{ row.food_name }}</a>
+            <p>{{ row.quantity_available }} portions · {{ row.listing_status }}</p>
+            <p>Collect by {{ row.pickup_deadline | date:'d MMM yyyy, HH:mm' }}</p>
+          </article>
+        } @empty { <p>Your organisation has no listings yet.</p> }
+      </section>
+    </div>
+  } @else if (busy()) {
+    <p role="status">Loading your provider dashboard…</p>
+  } @else {
+    <button (click)="load()">Retry</button>
+    <button (click)="account.logout(); error.set('')">Switch account</button>
+  }
+</main>

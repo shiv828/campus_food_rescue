@@ -1,0 +1,72 @@
+<main class="food-page">
+    <section class="food-hero">
+        <div class="hero-copy">
+            <h1>Good food.<br><span>Less waste.</span></h1>
+            <p>Find surplus meals on campus and see where to collect them.</p>
+            <a href="#food-listings">Browse food listings <span aria-hidden="true">↓</span></a>
+        </div>
+        <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&amp;fit=crop&amp;w=1200&amp;q=85"
+             alt="A colourful bowl of fresh vegetables" width="1200" height="800" fetchpriority="high">
+    </section>
+
+    <section class="food-results" id="food-listings" aria-labelledby="listings-title">
+        <h2 id="listings-title">Food listings</h2>
+        @if (loading) {
+            <p role="status">Loading food listings…</p>
+        }
+        @if (error) {
+            <p role="alert">{{ error }}</p>
+            <button type="button" (click)="reload()">Reload page</button>
+        }
+        @if (!loading && !error && listings.length === 0) {
+            <p>No food listings available.</p>
+        }
+        <form class="food-filters" (submit)="$event.preventDefault()">
+            <label>Search food<input type="search" name="search" [(ngModel)]="search" (ngModelChange)="page = 1" placeholder="Search by food name"></label>
+            <label>Campus<select name="campus" [(ngModel)]="campus" (ngModelChange)="page = 1">
+                <option value="">All campuses</option>
+                @for (place of campuses; track place) { <option [value]="place">{{ place }}</option> }
+            </select></label>
+            <label>Dietary preference<select name="diet" [(ngModel)]="diet" (ngModelChange)="page = 1">
+                <option value="">All food</option><option value="vegan">Vegan</option><option value="vegetarian">Vegetarian</option>
+            </select></label>
+            <label><input type="checkbox" name="availableOnly" [(ngModel)]="availableOnly" (ngModelChange)="page = 1"> Available for pickup</label>
+        </form>
+        @if (!loading && !error) { <p role="status">{{ filteredListings.length }} matching listings</p> }
+        <div class="meal-grid">
+            @for (listing of listings; track listing._id) {
+                <article class="meal-card">
+                    @if (listing.photo_url; as photoUrl) {
+                        <img class="meal-photo" [src]="photoUrl" alt="" loading="lazy"
+                             width="1000" height="625">
+                    }
+                    @if (listing.listing_status) {
+                        <span class="meal-status">{{ listing.listing_status }}</span>
+                    }
+                    <h3>{{ listing.food_name }}</h3>
+                    @if (validDeadline(listing)) {
+                        <p class="deadline">{{ deadlinePassed(listing) ? 'Collection deadline passed' : 'Collect by' }} · {{ listing.pickup_deadline | date:'d MMM, HH:mm' }}</p>
+                    }
+                    @if (tags(listing).length) { <p class="diet-tags">{{ tags(listing).join(' · ') }}</p> }
+                    @if (listing.description) {
+                        <p>{{ listing.description }}</p>
+                    }
+                    <dl>
+                        <dt>Pickup</dt>
+                        <dd>{{ listing.pickup_location }}</dd>
+                        @if (listing.quantity_available != null) {
+                            <dt>Portions</dt>
+                            <dd>{{ listing.quantity_available }}</dd>
+                        }
+                    </dl>
+                    <a [routerLink]="['/businesses', listing._id]">View details <span aria-hidden="true">↗</span></a>
+                </article>
+            }
+        </div>
+        <nav class="page-controls" aria-label="Food listing pages">
+            <button type="button" [disabled]="loading || page === 1" (click)="loadPage(page - 1)">Previous</button>
+            <span>Page {{ page }}</span>
+            <button type="button" [disabled]="loading || !hasNextPage" (click)="loadPage(page + 1)">Next</button>
+        </nav>
+    </section>
+</main>
